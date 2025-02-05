@@ -36,15 +36,15 @@ document.addEventListener("DOMContentLoaded", async () => {
         words.forEach((pair) => {
             let [original, translation] = pair.split("|");
             let span = document.createElement("span");
+            span.className = "word";
 
             if (knownWords.has(original.toLowerCase())) {
                 span.textContent = original;
-                span.className = "word ignored";
+                span.classList.add("ignored");
             } else {
                 span.textContent = original;
                 span.dataset.originalText = original;
                 span.dataset.translatedText = translation;
-                span.className = "word";
                 span.addEventListener("click", toggleTranslation);
                 span.addEventListener("mousedown", (e) => handleLongPress(e, span));
                 span.addEventListener("mouseup", () => clearTimeout(span.holdTimer));
@@ -102,6 +102,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 word.style.backgroundColor = "transparent";
                 word.style.border = "1px solid lightgray";
                 word.style.padding = "5px 10px";
+                word.style.margin = "2px";
                 await addDoc(window.firebaseCollection, { word: word.textContent.toLowerCase() });
                 knownWords.add(word.textContent.toLowerCase());
             }
