@@ -6,6 +6,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     const loadTextButton = document.getElementById("loadText");
     const clearInputButton = document.getElementById("clearInput");
     const resetTranslationsButton = document.getElementById("resetTranslations");
+    const showKnownWordsButton = document.getElementById("showKnownWords");
+    const knownWordsContainer = document.getElementById("known-words-container");
 
     let knownWords = new Set();
 
@@ -83,11 +85,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         wordSpan.addEventListener("mousedown", (e) => handleLongPressKnown(e, wordSpan));
 
-        wordSpan.addEventListener("click", async () => {
-            wordSpan.remove();
-            wordElement.classList.remove("selected");
-        });
-
         selectedWordsContainer.appendChild(wordSpan);
     }
 
@@ -114,5 +111,16 @@ document.addEventListener("DOMContentLoaded", async () => {
             word.style.backgroundColor = "";
         });
         document.getElementById("selected-words").innerHTML = "";
+    });
+
+    showKnownWordsButton.addEventListener("click", async () => {
+        await loadKnownWords();
+        knownWordsContainer.innerHTML = "<h3>Выученные слова:</h3>";
+        knownWords.forEach(word => {
+            let span = document.createElement("span");
+            span.className = "word ignored";
+            span.textContent = word;
+            knownWordsContainer.appendChild(span);
+        });
     });
 });
