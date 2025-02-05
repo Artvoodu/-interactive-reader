@@ -5,8 +5,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const textContainer = document.getElementById("text-container");
     const loadTextButton = document.getElementById("loadText");
     const clearInputButton = document.getElementById("clearInput");
-    const knownWordsContainer = document.getElementById("known-words-container");
-    const showKnownWordsButton = document.getElementById("showKnownWords");
+    const resetTranslationsButton = document.getElementById("resetTranslations");
 
     let knownWords = new Set();
 
@@ -32,7 +31,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     async function renderText(text) {
         textContainer.innerHTML = "";
         const words = text.split(" ");
-        words.forEach(async (pair) => {
+        words.forEach((pair) => {
             let [original, translation] = pair.split("|");
             let span = document.createElement("span");
 
@@ -81,25 +80,39 @@ document.addEventListener("DOMContentLoaded", async () => {
         let wordSpan = document.createElement("span");
         wordSpan.className = "word selected";
         wordSpan.textContent = wordElement.dataset.originalText;
-        
+
+        wordSpan.addEventListener("mousedown", (e) => handleLongPressKnown(e, wordSpan));
+
         wordSpan.addEventListener("click", async () => {
             wordSpan.remove();
             wordElement.classList.remove("selected");
-            await deleteDoc(doc(window.firebaseDB, "known_words", wordElement.dataset.originalText.toLowerCase()));
-            knownWords.delete(wordElement.dataset.originalText.toLowerCase());
         });
 
         selectedWordsContainer.appendChild(wordSpan);
     }
 
-    showKnownWordsButton.addEventListener("click", async () => {
-        await loadKnownWords();
-        knownWordsContainer.innerHTML = "<h3>Известные слова:</h3>";
-        knownWords.forEach(word => {
-            let span = document.createElement("span");
-            span.className = "word ignored";
-            span.textContent = word;
-            knownWordsContainer.appendChild(span);
+    async function handleLongPressKnown(event, word) {
+        word.holdTimer = setTimeout(async () => {
+            if (word.classList.contains("known")) {
+                word.classList.remove("known");
+                word.style.backgroundColor = "black";
+                await deleteDoc(doc(window.firebaseDB, "known_words", word.textContent.toLowerCase()));
+                knownWords.delete(word.textContent.toLowerCase());
+            } else {
+                word.classList.add("known");
+                word.style.backgroundColor = "yellow";
+                await addDoc(window.firebaseCollection, { word: word.textContent.toLowerCase() });
+                knownWords.add(word.textContent.toLowerCase());
+            }
+        }, 500);
+    }
+
+    resetTranslationsButton.addEventListener("click", () => {
+        document.querySelectorAll(".word").forEach(word => {
+            word.classList.remove("translated", "selected", "known");
+            word.textContent = word.dataset.originalText || word.textContent;
+            word.style.backgroundColor = "";
         });
+        document.getElementById("selected-words").innerHTML = "";
     });
 });
