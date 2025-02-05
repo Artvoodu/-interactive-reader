@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Reader</title>
+    <script type="module">
+        // Import Firebase SDK
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-app.js";
+        import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js";
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyB5-MuamMIK95lgI29gzhAjspyKpWRwqeY",
+            authDomain: "interactive-reader-d125f.firebaseapp.com",
+            databaseURL: "https://interactive-reader-d125f-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "interactive-reader-d125f",
+            storageBucket: "interactive-reader-d125f.firebasestorage.app",
+            messagingSenderId: "183122050244",
+            appId: "1:183122050244:web:c7c03ac7c0bfcc7caf1d91"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        window.firebaseDB = db;
+        window.firebaseCollection = collection(db, "known_words");
+
+    </script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="top-bar">
+        <button id="resetTranslations">🔄</button>
+        <button id="clearInput">🗑 Очистить поле</button>
+        <button id="loadText">📜 Показать текст</button>
+        <button id="translate10">10%</button>
+        <button id="translate30">30%</button>
+        <button id="translate50">50%</button>
+    </div>
+
+    <h3>📌 Инструкция:</h3>
+    <p>Вставь текст в формате <strong>слово|перевод</strong>. Например:</p>
+    <pre>Hoy|сегодня es|есть un día|день hermoso|прекрасный.</pre>
+
+    <textarea id="textInput" placeholder="Вставьте текст сюда..."></textarea>
+    
+    <div id="text-container"></div>
+    
+    <div id="word-block">
+        <h3>Выбранные слова:</h3>
+        <div id="selected-words"></div>
+        <button id="copyWords">📋 Копировать</button>
+    </div>
+
+    <button id="showKnownWords">📜 Показать известные слова</button>
+    <div id="known-words-container"></div>
+    
+    <script src="script.js" type="module"></script>
+</body>
+</html>
