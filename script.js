@@ -38,7 +38,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             let span = document.createElement("span");
 
             if (knownWords.has(original.toLowerCase())) {
-                span.textContent = original + " ";
+                span.textContent = original;
                 span.className = "word ignored";
             } else {
                 span.textContent = original;
@@ -92,12 +92,16 @@ document.addEventListener("DOMContentLoaded", async () => {
         word.holdTimer = setTimeout(async () => {
             if (word.classList.contains("known")) {
                 word.classList.remove("known");
+                word.classList.add("selected");
                 word.style.backgroundColor = "black";
                 await deleteDoc(doc(window.firebaseDB, "known_words", word.textContent.toLowerCase()));
                 knownWords.delete(word.textContent.toLowerCase());
             } else {
                 word.classList.add("known");
-                word.style.backgroundColor = "yellow";
+                word.classList.remove("selected");
+                word.style.backgroundColor = "transparent";
+                word.style.border = "1px solid lightgray";
+                word.style.padding = "5px 10px";
                 await addDoc(window.firebaseCollection, { word: word.textContent.toLowerCase() });
                 knownWords.add(word.textContent.toLowerCase());
             }
@@ -109,6 +113,8 @@ document.addEventListener("DOMContentLoaded", async () => {
             word.classList.remove("translated", "selected", "known");
             word.textContent = word.dataset.originalText || word.textContent;
             word.style.backgroundColor = "";
+            word.style.border = "";
+            word.style.padding = "";
         });
         document.getElementById("selected-words").innerHTML = "";
     });
