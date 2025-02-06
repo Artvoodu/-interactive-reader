@@ -65,8 +65,12 @@ document.addEventListener("DOMContentLoaded", async () => {
                 span.dataset.originalText = original;
                 span.dataset.translatedText = translation;
                 span.addEventListener("click", toggleTranslation);
-                span.addEventListener("mousedown", (e) => handleLongPress(e, span));
+                span.addEventListener("mousedown", (e) => handleLongPress(e, span, "text"));
                 span.addEventListener("mouseup", () => clearTimeout(span.holdTimer));
+            }
+
+            if (selectedWords.has(original.toLowerCase())) {
+                span.classList.add("selected");
             }
 
             textContainer.appendChild(span);
@@ -84,70 +88,23 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     }
 
-    function handleLongPress(event, word) {
+    function handleLongPress(event, word, context) {
         word.holdTimer = setTimeout(() => {
-            showContextMenu(event, word);
-        }, 500);
-    }
-
-    function showContextMenu(event, word) {
-        document.querySelectorAll(".action-menu").forEach(menu => menu.remove());
-
-        const menu = document.createElement("div");
-        menu.className = "action-menu";
-        menu.style.position = "absolute";
-        menu.style.top = `${event.clientY}px`;
-        menu.style.left = `${event.clientX}px`;
-        menu.style.background = "#fff";
-        menu.style.border = "1px solid #ccc";
-        menu.style.padding = "5px";
-        menu.style.boxShadow = "2px 2px 5px rgba(0,0,0,0.2)";
-        menu.style.zIndex = "1000";
-        menu.style.borderRadius = "5px";
-        menu.style.display = "flex";
-        menu.style.flexDirection = "column";
-        menu.style.gap = "5px";
-
-        const addToSelected = document.createElement("button");
-        addToSelected.textContent = "📋 Добавить в Выбранные";
-        addToSelected.style.cursor = "pointer";
-        addToSelected.style.padding = "5px";
-        addToSelected.style.border = "none";
-        addToSelected.style.background = "#f0f0f0";
-        addToSelected.style.borderRadius = "3px";
-        addToSelected.onclick = () => {
-            addToSelectedWords(word.textContent.toLowerCase());
-            menu.remove();
-        };
-
-        const addToKnown = document.createElement("button");
-        addToKnown.textContent = "📚 Добавить в Выученные";
-        addToKnown.style.cursor = "pointer";
-        addToKnown.style.padding = "5px";
-        addToKnown.style.border = "none";
-        addToKnown.style.background = "#f0f0f0";
-        addToKnown.style.borderRadius = "3px";
-        addToKnown.onclick = () => {
-            addToKnownWords(word.dataset.originalText.toLowerCase());
-            menu.remove();
-        };
-
-        menu.appendChild(addToSelected);
-        menu.appendChild(addToKnown);
-        document.body.appendChild(menu);
-
-        // Закрытие меню при клике вне его
-        document.addEventListener("click", (e) => {
-            if (!menu.contains(e.target)) {
-                menu.remove();
+            if (context === "text") {
+                addToSelectedWords(word.dataset.originalText.toLowerCase());
+            } else if (context === "selected") {
+                addToKnownWords(word.textContent.toLowerCase());
+            } else if (context === "known") {
+                removeFromKnownWords(word.textContent.toLowerCase());
             }
-        }, { once: true });
+        }, 500);
     }
 
     function addToSelectedWords(word) {
         if (!selectedWords.has(word)) {
             selectedWords.add(word);
             updateSelectedWordsUI();
+            renderText(textInput.value.trim());
         }
     }
 
@@ -160,23 +117,27 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     function updateSelectedWordsUI() {
         const selectedContainer = document.getElementById("selected-words");
-        selectedContainer.innerHTML = "";
+        selectedContainer.innerHTML = "<h3>Выбранные слова:</h3>";
         selectedWords.forEach(word => {
             let span = document.createElement("span");
             span.className = "word selected";
             span.textContent = word;
-            span.addEventListener("click", () => {
-                selectedWords.delete(word);
-                updateSelectedWordsUI();
-            });
+            span.addEventListener("mousedown", (e) => handleLongPress(e, span, "selected"));
+            span.addEventListener("mouseup", () => clearTimeout(span.holdTimer));
             selectedContainer.appendChild(span);
         });
     }
 
     function updateKnownWordsUI() {
         knownWordsContainer.innerHTML = "<h3>Выученные слова:</h3>";
-        let wordsArray = [...knownWords];
-        knownWordsContainer.textContent += " " + wordsArray.join(", ");
+        knownWords.forEach(word => {
+            let span = document.createElement("span");
+            span.className = "word ignored";
+            span.textContent = word;
+            span.addEventListener("mousedown", (e) => handleLongPress(e, span, "known"));
+            span.addEventListener("mouseup", () => clearTimeout(span.holdTimer));
+            knownWordsContainer.appendChild(span);
+        });
     }
 
     function removeFromKnownWords(word) {
@@ -200,9 +161,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     showKnownWordsButton.addEventListener("click", () => {
         updateKnownWordsUI();
-        document.querySelectorAll(".ignored").forEach(word => {
-            word.addEventListener("click", () => removeFromKnownWords(word.textContent));
-        });
     });
 
     function translatePercentage(percentage) {
