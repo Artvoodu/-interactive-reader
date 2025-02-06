@@ -15,7 +15,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     let knownWords = new Set(JSON.parse(localStorage.getItem("knownWords")) || []);
     let selectedWords = new Set();
 
-    // Добавляем индикатор версии
+    // Индикатор версии
     versionIndicator.textContent = "Версия: 20";
     versionIndicator.style.position = "absolute";
     versionIndicator.style.top = "10px";
@@ -26,11 +26,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     versionIndicator.style.borderRadius = "5px";
     document.body.appendChild(versionIndicator);
 
+    // Обработчики событий
     loadTextButton.addEventListener("click", () => {
         const text = textInput.value.trim();
-        if (text) {
-            renderText(text);
-        }
+        if (text) renderText(text);
     });
 
     clearInputButton.addEventListener("click", () => {
@@ -40,7 +39,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     copyWordsButton.addEventListener("click", () => {
         const selectedWordsText = [...selectedWords].join(", ");
         navigator.clipboard.writeText(selectedWordsText).then(() => {
-            alert("Слова скопированы в буфер обмена!");
+            alert("Слова скопированы!");
         });
     });
 
@@ -48,6 +47,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     translate30Button.addEventListener("click", () => translatePercentage(30));
     translate50Button.addEventListener("click", () => translatePercentage(50));
 
+    // Рендер текста
     async function renderText(text) {
         textContainer.innerHTML = "";
         const words = text.split(" ");
@@ -58,8 +58,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             if (knownWords.has(original.toLowerCase())) {
                 span.textContent = original;
-                span.classList.add("ignored");
-                span.style.marginRight = "5px";
+                span.classList.add("known");
             } else {
                 span.textContent = original;
                 span.dataset.originalText = original;
@@ -77,6 +76,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     }
 
+    // Переключение перевода
     function toggleTranslation(event) {
         const word = event.target;
         if (word.classList.contains("translated")) {
@@ -88,18 +88,51 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     }
 
+    // Обработка долгого нажатия
     function handleLongPress(event, word, context) {
         word.holdTimer = setTimeout(() => {
             if (context === "text") {
                 addToSelectedWords(word.dataset.originalText.toLowerCase());
             } else if (context === "selected") {
                 addToKnownWords(word.textContent.toLowerCase());
+                selectedWords.delete(word.textContent.toLowerCase());
+                updateSelectedWordsUI();
             } else if (context === "known") {
                 removeFromKnownWords(word.textContent.toLowerCase());
             }
         }, 500);
     }
 
+    // Обновление UI
+    function updateSelectedWordsUI() {
+        const selectedContainer = document.getElementById("selected-words");
+        selectedContainer.innerHTML = "<h3>Выбранные слова:</h3>";
+        selectedWords.forEach(word => {
+            let span = document.createElement("span");
+            span.className = "word selected";
+            span.textContent = word;
+            span.addEventListener("click", () => {
+                selectedWords.delete(word);
+                updateSelectedWordsUI();
+                renderText(textInput.value.trim());
+            });
+            selectedContainer.appendChild(span);
+        });
+    }
+
+    function updateKnownWordsUI() {
+        knownWordsContainer.innerHTML = "<h3>Выученные слова:</h3>";
+        knownWords.forEach(word => {
+            let span = document.createElement("span");
+            span.className = "word known";
+            span.textContent = word;
+            span.addEventListener("mousedown", (e) => handleLongPress(e, span, "known"));
+            span.addEventListener("mouseup", () => clearTimeout(span.holdTimer));
+            knownWordsContainer.appendChild(span);
+        });
+    }
+
+    // Дополнительные функции
     function addToSelectedWords(word) {
         if (!selectedWords.has(word)) {
             selectedWords.add(word);
@@ -115,31 +148,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         renderText(textInput.value.trim());
     }
 
-    function updateSelectedWordsUI() {
-        const selectedContainer = document.getElementById("selected-words");
-        selectedContainer.innerHTML = "<h3>Выбранные слова:</h3>";
-        selectedWords.forEach(word => {
-            let span = document.createElement("span");
-            span.className = "word selected";
-            span.textContent = word;
-            span.addEventListener("mousedown", (e) => handleLongPress(e, span, "selected"));
-            span.addEventListener("mouseup", () => clearTimeout(span.holdTimer));
-            selectedContainer.appendChild(span);
-        });
-    }
-
-    function updateKnownWordsUI() {
-        knownWordsContainer.innerHTML = "<h3>Выученные слова:</h3>";
-        knownWords.forEach(word => {
-            let span = document.createElement("span");
-            span.className = "word ignored";
-            span.textContent = word;
-            span.addEventListener("mousedown", (e) => handleLongPress(e, span, "known"));
-            span.addEventListener("mouseup", () => clearTimeout(span.holdTimer));
-            knownWordsContainer.appendChild(span);
-        });
-    }
-
     function removeFromKnownWords(word) {
         knownWords.delete(word);
         localStorage.setItem("knownWords", JSON.stringify([...knownWords]));
@@ -149,33 +157,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     resetTranslationsButton.addEventListener("click", () => {
         document.querySelectorAll(".word").forEach(word => {
-            word.classList.remove("translated", "selected", "known");
+            word.classList.remove("translated", "selected");
             word.textContent = word.dataset.originalText || word.textContent;
-            word.style.backgroundColor = "";
-            word.style.border = "";
-            word.style.padding = "";
         });
         selectedWords.clear();
         updateSelectedWordsUI();
     });
-
-    showKnownWordsButton.addEventListener("click", () => {
-        updateKnownWordsUI();
-    });
-
-    function translatePercentage(percentage) {
-        const words = document.querySelectorAll(".word:not(.ignored)");
-        const wordsArray = Array.from(words);
-        const wordsToTranslate = Math.floor(wordsArray.length * (percentage / 100));
-
-        // Перемешиваем массив слов случайным образом
-        const shuffledWords = wordsArray.sort(() => Math.random() - 0.5);
-
-        // Переводим только необходимое количество слов
-        for (let i = 0; i < wordsToTranslate; i++) {
-            const word = shuffledWords[i];
-            word.textContent = word.dataset.translatedText;
-            word.classList.add("translated");
-        }
-    }
 });

@@ -53,8 +53,19 @@ button {
 }
 
 .word.selected {
-    background: black;
-    color: white;
+    background: white !important;
+    color: black !important;
+    border: 1px solid #ccc !important;
+}
+
+.word.known {
+    background: white !important;
+    color: #666 !important;
+    cursor: pointer;
+    padding: 5px 10px;
+    margin: 2px;
+    border-radius: 15px;
+}
 }
 
 .word.selected.translated {
