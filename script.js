@@ -96,6 +96,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     function openActionMenu(event, word) {
         event.preventDefault();
 
+        // Удаляем старые меню, если они есть
+        document.querySelectorAll(".action-menu").forEach(menu => menu.remove());
+
         const menu = document.createElement("div");
         menu.className = "action-menu";
         menu.style.position = "absolute";
@@ -106,10 +109,14 @@ document.addEventListener("DOMContentLoaded", async () => {
         menu.style.padding = "5px";
         menu.style.boxShadow = "2px 2px 5px rgba(0,0,0,0.2)";
         menu.style.zIndex = "1000";
+        menu.style.borderRadius = "5px";
+        menu.style.animation = "fadeIn 0.2s ease-in-out";
 
         const deleteOption = document.createElement("div");
         deleteOption.textContent = "🗑 Удалить из блока";
         deleteOption.style.cursor = "pointer";
+        deleteOption.style.padding = "5px";
+        deleteOption.style.borderBottom = "1px solid #ddd";
         deleteOption.onclick = () => {
             word.remove();
             menu.remove();
@@ -118,6 +125,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const learnOption = document.createElement("div");
         learnOption.textContent = "📚 Добавить в выученные";
         learnOption.style.cursor = "pointer";
+        learnOption.style.padding = "5px";
         learnOption.onclick = async () => {
             word.classList.add("known");
             word.style.backgroundColor = "yellow";
@@ -129,7 +137,12 @@ document.addEventListener("DOMContentLoaded", async () => {
         menu.appendChild(learnOption);
         document.body.appendChild(menu);
 
-        document.addEventListener("click", () => menu.remove(), { once: true });
+        // Закрытие меню при клике вне него
+        setTimeout(() => {
+            document.addEventListener("click", () => {
+                menu.remove();
+            }, { once: true });
+        }, 10);
     }
 
     async function updateKnownWords(word, action) {
