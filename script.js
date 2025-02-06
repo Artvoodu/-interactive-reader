@@ -63,6 +63,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         const words = text.split(" ");
         words.forEach((pair) => {
             let [original, translation] = pair.split("|");
+            if (!original || !translation) return; // Игнорируем некорректные пары
+
             let span = document.createElement("span");
             span.className = "word";
 
@@ -188,6 +190,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Функция для перевода случайных слов
     function translatePercentage(percentage) {
+        // Сбрасываем предыдущие переводы
+        document.querySelectorAll(".word.translated").forEach(word => {
+            word.textContent = word.dataset.originalText;
+            word.classList.remove("translated");
+        });
+
         const words = document.querySelectorAll(".word:not(.known)"); // Исключаем выученные слова
         const wordsArray = Array.from(words);
         const wordsToTranslate = Math.floor(wordsArray.length * (percentage / 100));
@@ -198,8 +206,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         // Переводим только необходимое количество слов
         for (let i = 0; i < wordsToTranslate; i++) {
             const word = shuffledWords[i];
-            word.textContent = word.dataset.translatedText;
-            word.classList.add("translated");
+            if (word.dataset.translatedText) { // Проверяем, есть ли перевод
+                word.textContent = word.dataset.translatedText;
+                word.classList.add("translated");
+            }
         }
     }
 });
