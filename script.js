@@ -106,7 +106,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Обновление UI
     function updateSelectedWordsUI() {
         const selectedContainer = document.getElementById("selected-words");
-        selectedContainer.innerHTML = "<h3>Выбранные слова:</h3>";
+        selectedContainer.innerHTML = "<h3>Выбранные слова:</h3>"; // Убрал дублирование
         selectedWords.forEach(word => {
             let span = document.createElement("span");
             span.className = "word selected";
@@ -116,6 +116,8 @@ document.addEventListener("DOMContentLoaded", async () => {
                 updateSelectedWordsUI();
                 renderText(textInput.value.trim());
             });
+            span.addEventListener("mousedown", (e) => handleLongPress(e, span, "selected"));
+            span.addEventListener("mouseup", () => clearTimeout(span.holdTimer));
             selectedContainer.appendChild(span);
         });
     }
@@ -164,9 +166,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         updateSelectedWordsUI();
     });
 
-    // Показ выученных слов
+    // Показ/скрытие выученных слов
     showKnownWordsButton.addEventListener("click", () => {
-        knownWordsContainer.style.display = "block";
-        updateKnownWordsUI();
+        if (knownWordsContainer.style.display === "none" || knownWordsContainer.style.display === "") {
+            knownWordsContainer.style.display = "block";
+            updateKnownWordsUI();
+        } else {
+            knownWordsContainer.style.display = "none";
+        }
     });
 });
