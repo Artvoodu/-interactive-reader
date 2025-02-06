@@ -8,25 +8,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     const knownWordsContainer = document.getElementById("known-words-container");
     const versionIndicator = document.createElement("div");
 
-    const knownWordsURL = "https://raw.githubusercontent.com/artvoodu/interactive-reader/main/known_words.json"; // JSON-хранилище
-
-    let knownWords = new Set();
-
-    async function loadKnownWords() {
-        try {
-            const response = await fetch(knownWordsURL);
-            if (!response.ok) throw new Error("Не удалось загрузить JSON.");
-            const data = await response.json();
-            knownWords = new Set(data.words);
-        } catch (error) {
-            console.error("Ошибка загрузки известных слов:", error);
-        }
-    }
-
-    await loadKnownWords();
+    let knownWords = new Set(JSON.parse(localStorage.getItem("knownWords")) || []);
 
     // Добавляем индикатор версии
-    versionIndicator.textContent = "Версия: 16";
+    versionIndicator.textContent = "Версия: 17";
     versionIndicator.style.position = "absolute";
     versionIndicator.style.top = "10px";
     versionIndicator.style.right = "10px";
@@ -84,63 +69,15 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     function handleLongPress(event, word) {
         word.holdTimer = setTimeout(() => {
-            if (!word.classList.contains("selected")) {
-                word.classList.add("selected");
-                addToWordBlock(word);
-            }
+            word.remove();
+            addToKnownWords(word.textContent.toLowerCase());
         }, 500);
     }
 
-    function addToWordBlock(wordElement) {
-        const selectedWordsContainer = document.getElementById("selected-words");
-
-        if ([...selectedWordsContainer.children].some(el => el.textContent === wordElement.dataset.originalText)) return;
-
-        let wordSpan = document.createElement("span");
-        wordSpan.className = "word selected";
-        wordSpan.textContent = wordElement.dataset.originalText;
-
-        wordSpan.addEventListener("mousedown", (e) => handleLongPressKnown(e, wordSpan));
-
-        selectedWordsContainer.appendChild(wordSpan);
-    }
-
-    async function handleLongPressKnown(event, word) {
-        word.holdTimer = setTimeout(async () => {
-            if (word.classList.contains("known")) {
-                word.classList.remove("known");
-                word.classList.add("selected");
-                word.style.backgroundColor = "black";
-                await updateKnownWords(word.textContent.toLowerCase(), "remove");
-            } else {
-                word.classList.add("known");
-                word.classList.remove("selected");
-                word.style.backgroundColor = "yellow";
-                await updateKnownWords(word.textContent.toLowerCase(), "add");
-            }
-        }, 500);
-    }
-
-    async function updateKnownWords(word, action) {
-        try {
-            const response = await fetch(knownWordsURL);
-            if (!response.ok) throw new Error("Не удалось загрузить JSON.");
-            const data = await response.json();
-
-            if (action === "add") {
-                if (!data.words.includes(word)) {
-                    data.words.push(word);
-                }
-            } else if (action === "remove") {
-                data.words = data.words.filter(w => w !== word);
-            }
-
-            localStorage.setItem("knownWords", JSON.stringify(data.words));
-            console.log("Обновленный список известных слов:", data.words);
-
-        } catch (error) {
-            console.error("Ошибка обновления известных слов:", error);
-        }
+    function addToKnownWords(word) {
+        knownWords.add(word);
+        localStorage.setItem("knownWords", JSON.stringify([...knownWords]));
+        console.log("Добавлено в выученные:", word);
     }
 
     resetTranslationsButton.addEventListener("click", () => {
@@ -155,7 +92,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 
     showKnownWordsButton.addEventListener("click", async () => {
-        await loadKnownWords();
         knownWordsContainer.innerHTML = "<h3>Выученные слова:</h3>";
         knownWords.forEach(word => {
             let span = document.createElement("span");
