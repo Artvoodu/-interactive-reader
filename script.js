@@ -26,6 +26,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     versionIndicator.style.borderRadius = "5px";
     document.body.appendChild(versionIndicator);
 
+    // Подсказка в поле ввода
+    textInput.value = "Hoy|сегодня es|есть un día|день hermoso|прекрасный.";
+    textInput.style.color = "#888"; // Серый цвет для подсказки
+    textInput.addEventListener("focus", () => {
+        if (textInput.value === "Hoy|сегодня es|есть un día|день hermoso|прекрасный.") {
+            textInput.value = "";
+            textInput.style.color = "#000"; // Чёрный цвет для ввода
+        }
+    });
+
     // Обработчики событий
     loadTextButton.addEventListener("click", () => {
         const text = textInput.value.trim();
@@ -106,7 +116,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Обновление UI
     function updateSelectedWordsUI() {
         const selectedContainer = document.getElementById("selected-words");
-        selectedContainer.innerHTML = "<h3>Выбранные слова:</h3>"; // Убрал дублирование
+        selectedContainer.innerHTML = ""; // Убираем дублирование заголовка
         selectedWords.forEach(word => {
             let span = document.createElement("span");
             span.className = "word selected";

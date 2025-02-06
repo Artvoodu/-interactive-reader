@@ -59,15 +59,16 @@ button {
 }
 
 .word.known {
-    background: white !important;
-    color: #666 !important;
+    background: #f5f5f5 !important; /* Новый цвет фона */
+    color: black !important; /* Новый цвет текста */
     cursor: pointer;
     padding: 5px 10px;
     margin: 2px;
-    border: 1px solid #ddd; /* Добавлена граница */
+    border: 1px solid #ddd;
     border-radius: 15px;
-    display: inline-block; /* Чтобы слова не сливались */
+    display: inline-block;
 }
+
 
 .word.selected.translated {
     color: lightblue;
