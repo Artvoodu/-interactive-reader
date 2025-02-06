@@ -6,6 +6,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     const resetTranslationsButton = document.getElementById("resetTranslations");
     const showKnownWordsButton = document.getElementById("showKnownWords");
     const knownWordsContainer = document.getElementById("known-words-container");
+    const copyWordsButton = document.getElementById("copyWords");
+    const translate10Button = document.getElementById("translate10");
+    const translate30Button = document.getElementById("translate30");
+    const translate50Button = document.getElementById("translate50");
     const versionIndicator = document.createElement("div");
 
     let knownWords = new Set(JSON.parse(localStorage.getItem("knownWords")) || []);
@@ -32,6 +36,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     clearInputButton.addEventListener("click", () => {
         textInput.value = "";
     });
+
+    copyWordsButton.addEventListener("click", () => {
+        const selectedWordsText = [...selectedWords].join(", ");
+        navigator.clipboard.writeText(selectedWordsText).then(() => {
+            alert("Слова скопированы в буфер обмена!");
+        });
+    });
+
+    translate10Button.addEventListener("click", () => translatePercentage(10));
+    translate30Button.addEventListener("click", () => translatePercentage(30));
+    translate50Button.addEventListener("click", () => translatePercentage(50));
 
     async function renderText(text) {
         textContainer.innerHTML = "";
@@ -113,7 +128,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         addToKnown.style.background = "#f0f0f0";
         addToKnown.style.borderRadius = "3px";
         addToKnown.onclick = () => {
-            addToKnownWords(word.textContent.toLowerCase());
+            addToKnownWords(word.dataset.originalText.toLowerCase());
             menu.remove();
         };
 
@@ -123,8 +138,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         event.stopPropagation();
 
-        document.addEventListener("click", () => {
-            menu.remove();
+        document.addEventListener("click", (e) => {
+            if (!menu.contains(e.target)) {
+                menu.remove();
+            }
         }, { once: true });
     }
 
@@ -139,6 +156,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         knownWords.add(word);
         localStorage.setItem("knownWords", JSON.stringify([...knownWords]));
         updateKnownWordsUI();
+        renderText(textInput.value.trim());
     }
 
     function updateSelectedWordsUI() {
@@ -159,13 +177,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     function updateKnownWordsUI() {
         knownWordsContainer.innerHTML = "<h3>Выученные слова:</h3>";
         let wordsArray = [...knownWords];
-        knownWordsContainer.textContent += " " + wordsArray.join(", "); // Пробелы и запятые для нормального отображения
+        knownWordsContainer.textContent += " " + wordsArray.join(", ");
     }
 
     function removeFromKnownWords(word) {
         knownWords.delete(word);
         localStorage.setItem("knownWords", JSON.stringify([...knownWords]));
         updateKnownWordsUI();
+        renderText(textInput.value.trim());
     }
 
     resetTranslationsButton.addEventListener("click", () => {
@@ -186,4 +205,18 @@ document.addEventListener("DOMContentLoaded", async () => {
             word.addEventListener("click", () => removeFromKnownWords(word.textContent));
         });
     });
+
+    function translatePercentage(percentage) {
+        const words = document.querySelectorAll(".word:not(.ignored)");
+        const wordsToTranslate = Math.floor(words.length * (percentage / 100));
+        let translatedCount = 0;
+
+        words.forEach(word => {
+            if (translatedCount < wordsToTranslate && !word.classList.contains("translated")) {
+                word.textContent = word.dataset.translatedText;
+                word.classList.add("translated");
+                translatedCount++;
+            }
+        });
+    }
 });
