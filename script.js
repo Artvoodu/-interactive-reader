@@ -1,5 +1,3 @@
-import { getDocs, addDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js";
-
 document.addEventListener("DOMContentLoaded", async () => {
     const textInput = document.getElementById("textInput");
     const textContainer = document.getElementById("text-container");
@@ -9,12 +7,19 @@ document.addEventListener("DOMContentLoaded", async () => {
     const showKnownWordsButton = document.getElementById("showKnownWords");
     const knownWordsContainer = document.getElementById("known-words-container");
 
+    const knownWordsURL = "https://raw.githubusercontent.com/artvoodu/interactive-reader/main/known_words.json"; // URL к JSON на GitHub
+
     let knownWords = new Set();
 
     async function loadKnownWords() {
-        knownWords.clear();
-        const snapshot = await getDocs(window.firebaseCollection);
-        snapshot.forEach(doc => knownWords.add(doc.data().word.toLowerCase()));
+        try {
+            const response = await fetch(knownWordsURL);
+            if (!response.ok) throw new Error("Не удалось загрузить JSON.");
+            const data = await response.json();
+            knownWords = new Set(data.words);
+        } catch (error) {
+            console.error("Ошибка загрузки известных слов:", error);
+        }
     }
 
     await loadKnownWords();
@@ -94,8 +99,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 word.classList.remove("known");
                 word.classList.add("selected");
                 word.style.backgroundColor = "black";
-                await deleteDoc(doc(window.firebaseDB, "known_words", word.textContent.toLowerCase()));
-                knownWords.delete(word.textContent.toLowerCase());
+                await updateKnownWords(word.textContent.toLowerCase(), "remove");
             } else {
                 word.classList.add("known");
                 word.classList.remove("selected");
@@ -103,10 +107,32 @@ document.addEventListener("DOMContentLoaded", async () => {
                 word.style.border = "1px solid lightgray";
                 word.style.padding = "5px 10px";
                 word.style.margin = "2px";
-                await addDoc(window.firebaseCollection, { word: word.textContent.toLowerCase() });
-                knownWords.add(word.textContent.toLowerCase());
+                await updateKnownWords(word.textContent.toLowerCase(), "add");
             }
         }, 500);
+    }
+
+    async function updateKnownWords(word, action) {
+        try {
+            const response = await fetch(knownWordsURL);
+            if (!response.ok) throw new Error("Не удалось загрузить JSON.");
+            const data = await response.json();
+
+            if (action === "add") {
+                if (!data.words.includes(word)) {
+                    data.words.push(word);
+                }
+            } else if (action === "remove") {
+                data.words = data.words.filter(w => w !== word);
+            }
+
+            // Временно сохраняем данные в localStorage, так как напрямую на GitHub записывать нельзя
+            localStorage.setItem("knownWords", JSON.stringify(data.words));
+            console.log("Обновленный список известных слов:", data.words);
+
+        } catch (error) {
+            console.error("Ошибка обновления известных слов:", error);
+        }
     }
 
     resetTranslationsButton.addEventListener("click", () => {
