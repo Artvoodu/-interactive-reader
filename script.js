@@ -11,7 +11,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     let knownWords = new Set(JSON.parse(localStorage.getItem("knownWords")) || []);
 
     // Добавляем индикатор версии
-    versionIndicator.textContent = "Версия: 17";
+    versionIndicator.textContent = "Версия: 18";
     versionIndicator.style.position = "absolute";
     versionIndicator.style.top = "10px";
     versionIndicator.style.right = "10px";
@@ -43,6 +43,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             if (knownWords.has(original.toLowerCase())) {
                 span.textContent = original;
                 span.classList.add("ignored");
+                span.style.marginRight = "5px"; // Оставляем пробел после скрытого слова
             } else {
                 span.textContent = original;
                 span.dataset.originalText = original;
@@ -78,6 +79,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         knownWords.add(word);
         localStorage.setItem("knownWords", JSON.stringify([...knownWords]));
         console.log("Добавлено в выученные:", word);
+        updateKnownWordsUI();
+    }
+
+    function updateKnownWordsUI() {
+        knownWordsContainer.innerHTML = "<h3>Выученные слова:</h3>";
+        let wordsArray = [...knownWords];
+        knownWordsContainer.textContent += " " + wordsArray.join(", "); // Добавляем пробелы и запятые между словами
     }
 
     resetTranslationsButton.addEventListener("click", () => {
@@ -91,13 +99,5 @@ document.addEventListener("DOMContentLoaded", async () => {
         document.getElementById("selected-words").innerHTML = "";
     });
 
-    showKnownWordsButton.addEventListener("click", async () => {
-        knownWordsContainer.innerHTML = "<h3>Выученные слова:</h3>";
-        knownWords.forEach(word => {
-            let span = document.createElement("span");
-            span.className = "word ignored";
-            span.textContent = word;
-            knownWordsContainer.appendChild(span);
-        });
-    });
+    showKnownWordsButton.addEventListener("click", updateKnownWordsUI);
 });
