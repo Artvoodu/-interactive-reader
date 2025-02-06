@@ -185,4 +185,21 @@ document.addEventListener("DOMContentLoaded", async () => {
             knownWordsContainer.style.display = "none";
         }
     });
+
+    // Функция для перевода случайных слов
+    function translatePercentage(percentage) {
+        const words = document.querySelectorAll(".word:not(.known)"); // Исключаем выученные слова
+        const wordsArray = Array.from(words);
+        const wordsToTranslate = Math.floor(wordsArray.length * (percentage / 100));
+
+        // Перемешиваем массив слов случайным образом
+        const shuffledWords = wordsArray.sort(() => Math.random() - 0.5);
+
+        // Переводим только необходимое количество слов
+        for (let i = 0; i < wordsToTranslate; i++) {
+            const word = shuffledWords[i];
+            word.textContent = word.dataset.translatedText;
+            word.classList.add("translated");
+        }
+    }
 });
