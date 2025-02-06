@@ -6,8 +6,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     const resetTranslationsButton = document.getElementById("resetTranslations");
     const showKnownWordsButton = document.getElementById("showKnownWords");
     const knownWordsContainer = document.getElementById("known-words-container");
+    const versionIndicator = document.createElement("div");
 
-    const knownWordsURL = "https://raw.githubusercontent.com/artvoodu/interactive-reader/main/known_words.json"; // JSON-хранилище на GitHub
+    const knownWordsURL = "https://raw.githubusercontent.com/artvoodu/interactive-reader/main/known_words.json"; // JSON-хранилище
 
     let knownWords = new Set();
 
@@ -23,6 +24,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     await loadKnownWords();
+
+    // Добавляем индикатор версии
+    versionIndicator.textContent = "Версия: 16";
+    versionIndicator.style.position = "absolute";
+    versionIndicator.style.top = "10px";
+    versionIndicator.style.right = "10px";
+    versionIndicator.style.background = "rgba(0,0,0,0.7)";
+    versionIndicator.style.color = "white";
+    versionIndicator.style.padding = "5px 10px";
+    versionIndicator.style.borderRadius = "5px";
+    document.body.appendChild(versionIndicator);
 
     loadTextButton.addEventListener("click", () => {
         const text = textInput.value.trim();
@@ -88,61 +100,25 @@ document.addEventListener("DOMContentLoaded", async () => {
         wordSpan.className = "word selected";
         wordSpan.textContent = wordElement.dataset.originalText;
 
-        wordSpan.addEventListener("click", (e) => openActionMenu(e, wordSpan));
+        wordSpan.addEventListener("mousedown", (e) => handleLongPressKnown(e, wordSpan));
 
         selectedWordsContainer.appendChild(wordSpan);
     }
 
-    function openActionMenu(event, word) {
-        event.preventDefault();
-
-        // Удаляем старые меню, если они есть
-        document.querySelectorAll(".action-menu").forEach(menu => menu.remove());
-
-        const menu = document.createElement("div");
-        menu.className = "action-menu";
-        menu.style.position = "absolute";
-        menu.style.top = `${event.clientY}px`;
-        menu.style.left = `${event.clientX}px`;
-        menu.style.background = "#fff";
-        menu.style.border = "1px solid #ccc";
-        menu.style.padding = "5px";
-        menu.style.boxShadow = "2px 2px 5px rgba(0,0,0,0.2)";
-        menu.style.zIndex = "1000";
-        menu.style.borderRadius = "5px";
-        menu.style.animation = "fadeIn 0.2s ease-in-out";
-
-        const deleteOption = document.createElement("div");
-        deleteOption.textContent = "🗑 Удалить из блока";
-        deleteOption.style.cursor = "pointer";
-        deleteOption.style.padding = "5px";
-        deleteOption.style.borderBottom = "1px solid #ddd";
-        deleteOption.onclick = () => {
-            word.remove();
-            menu.remove();
-        };
-
-        const learnOption = document.createElement("div");
-        learnOption.textContent = "📚 Добавить в выученные";
-        learnOption.style.cursor = "pointer";
-        learnOption.style.padding = "5px";
-        learnOption.onclick = async () => {
-            word.classList.add("known");
-            word.style.backgroundColor = "yellow";
-            await updateKnownWords(word.textContent.toLowerCase(), "add");
-            menu.remove();
-        };
-
-        menu.appendChild(deleteOption);
-        menu.appendChild(learnOption);
-        document.body.appendChild(menu);
-
-        // Закрытие меню при клике вне него
-        setTimeout(() => {
-            document.addEventListener("click", () => {
-                menu.remove();
-            }, { once: true });
-        }, 10);
+    async function handleLongPressKnown(event, word) {
+        word.holdTimer = setTimeout(async () => {
+            if (word.classList.contains("known")) {
+                word.classList.remove("known");
+                word.classList.add("selected");
+                word.style.backgroundColor = "black";
+                await updateKnownWords(word.textContent.toLowerCase(), "remove");
+            } else {
+                word.classList.add("known");
+                word.classList.remove("selected");
+                word.style.backgroundColor = "yellow";
+                await updateKnownWords(word.textContent.toLowerCase(), "add");
+            }
+        }, 500);
     }
 
     async function updateKnownWords(word, action) {
