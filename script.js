@@ -163,4 +163,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         selectedWords.clear();
         updateSelectedWordsUI();
     });
+
+    // Показ выученных слов
+    showKnownWordsButton.addEventListener("click", () => {
+        knownWordsContainer.style.display = "block";
+        updateKnownWordsUI();
+    });
 });

@@ -64,8 +64,9 @@ button {
     cursor: pointer;
     padding: 5px 10px;
     margin: 2px;
+    border: 1px solid #ddd; /* Добавлена граница */
     border-radius: 15px;
-}
+    display: inline-block; /* Чтобы слова не сливались */
 }
 
 .word.selected.translated {
@@ -83,4 +84,19 @@ button {
     margin-top: 20px;
     padding: 10px;
     border-top: 2px solid #ccc;
+}
+
+#known-words-container {
+    margin-top: 20px;
+    padding: 10px;
+    border-top: 2px solid #ccc;
+    width: 80%;
+}
+
+#known-words-container .word {
+    margin: 5px;
+    background: white;
+    color: #666;
+    border: 1px solid #ddd;
+    cursor: pointer;
 }
