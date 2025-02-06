@@ -136,8 +136,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         menu.appendChild(addToKnown);
         document.body.appendChild(menu);
 
-        event.stopPropagation();
-
+        // Закрытие меню при клике вне его
         document.addEventListener("click", (e) => {
             if (!menu.contains(e.target)) {
                 menu.remove();
@@ -208,15 +207,17 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     function translatePercentage(percentage) {
         const words = document.querySelectorAll(".word:not(.ignored)");
-        const wordsToTranslate = Math.floor(words.length * (percentage / 100));
-        let translatedCount = 0;
+        const wordsArray = Array.from(words);
+        const wordsToTranslate = Math.floor(wordsArray.length * (percentage / 100));
 
-        words.forEach(word => {
-            if (translatedCount < wordsToTranslate && !word.classList.contains("translated")) {
-                word.textContent = word.dataset.translatedText;
-                word.classList.add("translated");
-                translatedCount++;
-            }
-        });
+        // Перемешиваем массив слов случайным образом
+        const shuffledWords = wordsArray.sort(() => Math.random() - 0.5);
+
+        // Переводим только необходимое количество слов
+        for (let i = 0; i < wordsToTranslate; i++) {
+            const word = shuffledWords[i];
+            word.textContent = word.dataset.translatedText;
+            word.classList.add("translated");
+        }
     }
 });
