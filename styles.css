@@ -53,8 +53,8 @@ button {
 }
 
 .word.selected {
-    background: white !important;
-    color: black !important;
+    background: black !important; /* Чёрный фон */
+    color: white !important; /* Белый текст */
     border: 1px solid #ccc !important;
 }
 
