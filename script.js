@@ -13,12 +13,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   const translate30Button = document.getElementById("translate30");
   const translate50Button = document.getElementById("translate50");
   const versionIndicator = document.createElement("div");
+  
 
   let knownWords = new Set();
   let selectedWords = new Set();
 
   // Индикатор версии
-  versionIndicator.textContent = "Версия: 20";
+  versionIndicator.textContent = "Версия: 22";
   versionIndicator.style.position = "absolute";
   versionIndicator.style.top = "10px";
   versionIndicator.style.right = "10px";

@@ -33,15 +33,19 @@
 <body>
   <div id="top-bar">
     <button id="resetTranslations">🔄</button>
-    <button id="clearInput">🗑 Очистить поле</button>
-    <button id="loadText">📜 Показать текст</button>
+    <button id="clearInput">🗑</button>
+    <button id="loadText">📜</button>
     <button id="translate10">10%</button>
     <button id="translate30">30%</button>
     <button id="translate50">50%</button>
-    <button id="showKnownWords">📜 Выученные слова</button>
+    <button id="showKnownWords">📜</button>
   </div>
 
   <textarea id="textInput" placeholder="Вставьте текст сюда..."></textarea>
+  
+  <!-- Новый блок для загрузки файла -->
+  <input type="file" id="fileUpload" accept=".txt">
+  <button id="loadFile">Загрузить файл</button>
   
   <div id="text-container"></div>
   
