@@ -46,6 +46,11 @@ button {
     border-radius: 15px;
     cursor: pointer;
     transition: all 0.3s;
+	-webkit-user-select: none; /* Отключает выделение текста в Safari */
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none; /* Отключает появление контекстного меню при долгом нажатии */
 }
 
 .word.translated {

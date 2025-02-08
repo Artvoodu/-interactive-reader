@@ -14,12 +14,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   const translate50Button = document.getElementById("translate50");
   const versionIndicator = document.createElement("div");
 
-  // Множества для хранения слов в текущей сессии
   let knownWords = new Set();
   let selectedWords = new Set();
 
   // Индикатор версии
-  versionIndicator.textContent = "Версия: 20";
+  versionIndicator.textContent = "Версия: 21";
   versionIndicator.style.position = "absolute";
   versionIndicator.style.top = "10px";
   versionIndicator.style.right = "10px";
@@ -33,14 +32,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   textInput.value = "Hoy|сегодня es|есть un día|день hermoso|прекрасный.";
   textInput.style.color = "#888";
   textInput.addEventListener("focus", () => {
-    if (textInput.value === "Hoy|сегодня es|есть un дня|день hermoso|прекрасный." ||
-        textInput.value === "Hoy|сегодня es|есть un día|день hermoso|прекрасный.") {
+    if (textInput.value === "Hoy|сегодня es|есть un día|день hermoso|прекрасный.") {
       textInput.value = "";
       textInput.style.color = "#000";
     }
   });
 
-  // Обработчики событий
+  // Обработчики кнопок
   loadTextButton.addEventListener("click", () => {
     const text = textInput.value.trim();
     if (text) renderText(text);
@@ -110,8 +108,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     words.forEach((pair) => {
       let [original, translation] = pair.split("|");
       if (!original || !translation) return;
+
       let span = document.createElement("span");
       span.className = "word";
+
       if (knownWords.has(original.toLowerCase())) {
         span.textContent = original;
         span.classList.add("known");
@@ -120,12 +120,23 @@ document.addEventListener("DOMContentLoaded", async () => {
         span.dataset.originalText = original;
         span.dataset.translatedText = translation;
         span.addEventListener("click", toggleTranslation);
+
+        // Обработчики для ПК
         span.addEventListener("mousedown", (e) => handleLongPress(e, span, "text"));
         span.addEventListener("mouseup", () => clearTimeout(span.holdTimer));
+
+        // Обработчики для мобильных устройств
+        span.addEventListener("touchstart", (e) => {
+          e.preventDefault();
+          handleLongPress(e, span, "text");
+        }, { passive: false });
+        span.addEventListener("touchend", () => clearTimeout(span.holdTimer));
       }
+
       if (selectedWords.has(original.toLowerCase())) {
         span.classList.add("selected");
       }
+
       textContainer.appendChild(span);
     });
   }
@@ -169,8 +180,15 @@ document.addEventListener("DOMContentLoaded", async () => {
         updateSelectedWordsUI();
         renderText(textInput.value.trim());
       });
+      // Обработчики для ПК
       span.addEventListener("mousedown", (e) => handleLongPress(e, span, "selected"));
       span.addEventListener("mouseup", () => clearTimeout(span.holdTimer));
+      // Обработчики для мобильных
+      span.addEventListener("touchstart", (e) => {
+        e.preventDefault();
+        handleLongPress(e, span, "selected");
+      }, { passive: false });
+      span.addEventListener("touchend", () => clearTimeout(span.holdTimer));
       selectedContainer.appendChild(span);
     });
   }
@@ -181,8 +199,15 @@ document.addEventListener("DOMContentLoaded", async () => {
       let span = document.createElement("span");
       span.className = "word known";
       span.textContent = word;
+      // Обработчики для ПК
       span.addEventListener("mousedown", (e) => handleLongPress(e, span, "known"));
       span.addEventListener("mouseup", () => clearTimeout(span.holdTimer));
+      // Обработчики для мобильных
+      span.addEventListener("touchstart", (e) => {
+        e.preventDefault();
+        handleLongPress(e, span, "known");
+      }, { passive: false });
+      span.addEventListener("touchend", () => clearTimeout(span.holdTimer));
       knownWordsContainer.appendChild(span);
     });
   }
@@ -231,6 +256,5 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
-  // При загрузке страницы подгружаем выученные слова из Firestore
   await loadKnownWords();
 });
