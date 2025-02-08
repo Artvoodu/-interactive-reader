@@ -18,7 +18,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   let selectedWords = new Set();
 
   // Индикатор версии
-  versionIndicator.textContent = "Версия: 21";
+  versionIndicator.textContent = "Версия: 20";
   versionIndicator.style.position = "absolute";
   versionIndicator.style.top = "10px";
   versionIndicator.style.right = "10px";
@@ -38,7 +38,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  // Обработчики кнопок
   loadTextButton.addEventListener("click", () => {
     const text = textInput.value.trim();
     if (text) renderText(text);
@@ -101,42 +100,55 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
-  // Рендер текста с учетом выученных и выбранных слов
+  // Рендер текста: для слов, которые не являются выученными,
+  // добавляем обработчики для mouse и touch событий.
   function renderText(text) {
     textContainer.innerHTML = "";
     const words = text.split(" ");
     words.forEach((pair) => {
       let [original, translation] = pair.split("|");
       if (!original || !translation) return;
-
       let span = document.createElement("span");
       span.className = "word";
+      const lowerOriginal = original.toLowerCase();
 
-      if (knownWords.has(original.toLowerCase())) {
+      if (knownWords.has(lowerOriginal)) {
         span.textContent = original;
         span.classList.add("known");
       } else {
         span.textContent = original;
         span.dataset.originalText = original;
         span.dataset.translatedText = translation;
+        // Обработчик клика для ПК (mouse)
         span.addEventListener("click", toggleTranslation);
-
-        // Обработчики для ПК
-        span.addEventListener("mousedown", (e) => handleLongPress(e, span, "text"));
+        span.addEventListener("mousedown", (e) => {
+          span.holdTimer = setTimeout(() => {
+            handleLongPress(e, span, "text");
+          }, 500);
+        });
         span.addEventListener("mouseup", () => clearTimeout(span.holdTimer));
-
-        // Обработчики для мобильных устройств
+        span.addEventListener("mouseleave", () => clearTimeout(span.holdTimer));
+        // Обработчики для touch-устройств
         span.addEventListener("touchstart", (e) => {
           e.preventDefault();
-          handleLongPress(e, span, "text");
+          span.touchLongPress = false;
+          span.holdTimer = setTimeout(() => {
+            span.touchLongPress = true;
+            handleLongPress(e, span, "text");
+          }, 500);
         }, { passive: false });
-        span.addEventListener("touchend", () => clearTimeout(span.holdTimer));
+        span.addEventListener("touchend", (e) => {
+          clearTimeout(span.holdTimer);
+          if (!span.touchLongPress) {
+            // Если удержание не произошло – короткий тап: переводим слово
+            toggleTranslation({ target: span });
+          }
+        }, { passive: false });
       }
 
-      if (selectedWords.has(original.toLowerCase())) {
+      if (selectedWords.has(lowerOriginal)) {
         span.classList.add("selected");
       }
-
       textContainer.appendChild(span);
     });
   }
@@ -153,63 +165,20 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
-  // Обработка долгого нажатия для добавления/удаления слов
+  // При долгом нажатии:
+  // для текста – добавляем слово в выбранные,
+  // для выбранного слова – добавляем его в выученные,
+  // для выученного – удаляем слово.
   function handleLongPress(event, word, context) {
-    word.holdTimer = setTimeout(() => {
-      if (context === "text") {
-        addToSelectedWords(word.dataset.originalText.toLowerCase());
-      } else if (context === "selected") {
-        addToKnownWords(word.textContent.toLowerCase());
-        selectedWords.delete(word.textContent.toLowerCase());
-        updateSelectedWordsUI();
-      } else if (context === "known") {
-        removeFromKnownWords(word.textContent.toLowerCase());
-      }
-    }, 500);
-  }
-
-  function updateSelectedWordsUI() {
-    const selectedContainer = document.getElementById("selected-words");
-    selectedContainer.innerHTML = "";
-    selectedWords.forEach(word => {
-      let span = document.createElement("span");
-      span.className = "word selected";
-      span.textContent = word;
-      span.addEventListener("click", () => {
-        selectedWords.delete(word);
-        updateSelectedWordsUI();
-        renderText(textInput.value.trim());
-      });
-      // Обработчики для ПК
-      span.addEventListener("mousedown", (e) => handleLongPress(e, span, "selected"));
-      span.addEventListener("mouseup", () => clearTimeout(span.holdTimer));
-      // Обработчики для мобильных
-      span.addEventListener("touchstart", (e) => {
-        e.preventDefault();
-        handleLongPress(e, span, "selected");
-      }, { passive: false });
-      span.addEventListener("touchend", () => clearTimeout(span.holdTimer));
-      selectedContainer.appendChild(span);
-    });
-  }
-
-  function updateKnownWordsUI() {
-    knownWordsContainer.innerHTML = "<h3>Выученные слова:</h3>";
-    knownWords.forEach(word => {
-      let span = document.createElement("span");
-      span.className = "word known";
-      span.textContent = word;
-      // Обработчики для ПК
-      span.addEventListener("mousedown", (e) => handleLongPress(e, span, "known"));
-      span.addEventListener("mouseup", () => clearTimeout(span.holdTimer));
-      // Обработчики для мобильных
-      span.addEventListener("touchstart", (e) => {
-        e.preventDefault();
-        handleLongPress(e, span, "known");
-      }, { passive: false });
-      span.addEventListener("touchend", () => clearTimeout(span.holdTimer));
-      knownWordsContainer.appendChild(span);
-    });
+    if (context === "text") {
+      addToSelectedWords(word.dataset.originalText.toLowerCase());
+    } else if (context === "selected") {
+      addToKnownWords(word.textContent.toLowerCase());
+      selectedWords.delete(word.textContent.toLowerCase());
+      updateSelectedWordsUI();
+    } else if (context === "known") {
+      removeFromKnownWords(word.textContent.toLowerCase());
+    }
   }
 
   function addToSelectedWords(word) {
@@ -220,24 +189,81 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
-  resetTranslationsButton.addEventListener("click", () => {
-    document.querySelectorAll(".word").forEach(word => {
-      word.classList.remove("translated", "selected");
-      word.textContent = word.dataset.originalText || word.textContent;
+  // Обновление UI для выбранных слов
+  function updateSelectedWordsUI() {
+    const selectedContainer = document.getElementById("selected-words");
+    selectedContainer.innerHTML = "";
+    selectedWords.forEach(word => {
+      let span = document.createElement("span");
+      span.className = "word selected";
+      span.textContent = word;
+      // Для ПК
+      span.addEventListener("click", () => {
+        selectedWords.delete(word);
+        updateSelectedWordsUI();
+        renderText(textInput.value.trim());
+      });
+      span.addEventListener("mousedown", (e) => {
+        span.holdTimer = setTimeout(() => {
+          handleLongPress(e, span, "selected");
+        }, 500);
+      });
+      span.addEventListener("mouseup", () => clearTimeout(span.holdTimer));
+      span.addEventListener("mouseleave", () => clearTimeout(span.holdTimer));
+      // Для touch
+      span.addEventListener("touchstart", (e) => {
+        e.preventDefault();
+        span.touchLongPress = false;
+        span.holdTimer = setTimeout(() => {
+          span.touchLongPress = true;
+          handleLongPress(e, span, "selected");
+        }, 500);
+      }, { passive: false });
+      span.addEventListener("touchend", (e) => {
+        clearTimeout(span.holdTimer);
+        if (!span.touchLongPress) {
+          // Короткий тап – удаляем слово из выбранных
+          selectedWords.delete(word);
+          updateSelectedWordsUI();
+          renderText(textInput.value.trim());
+        }
+      }, { passive: false });
+      selectedContainer.appendChild(span);
     });
-    selectedWords.clear();
-    updateSelectedWordsUI();
-  });
+  }
 
-  showKnownWordsButton.addEventListener("click", () => {
-    if (knownWordsContainer.style.display === "none" || knownWordsContainer.style.display === "") {
-      knownWordsContainer.style.display = "block";
-      updateKnownWordsUI();
-    } else {
-      knownWordsContainer.style.display = "none";
-    }
-  });
+  // Обновление UI для выученных слов
+  function updateKnownWordsUI() {
+    knownWordsContainer.innerHTML = "<h3>Выученные слова:</h3>";
+    knownWords.forEach(word => {
+      let span = document.createElement("span");
+      span.className = "word known";
+      span.textContent = word;
+      // Для ПК
+      span.addEventListener("mousedown", (e) => {
+        span.holdTimer = setTimeout(() => {
+          handleLongPress(e, span, "known");
+        }, 500);
+      });
+      span.addEventListener("mouseup", () => clearTimeout(span.holdTimer));
+      span.addEventListener("mouseleave", () => clearTimeout(span.holdTimer));
+      // Для touch
+      span.addEventListener("touchstart", (e) => {
+        e.preventDefault();
+        span.touchLongPress = false;
+        span.holdTimer = setTimeout(() => {
+          span.touchLongPress = true;
+          handleLongPress(e, span, "known");
+        }, 500);
+      }, { passive: false });
+      span.addEventListener("touchend", (e) => {
+        clearTimeout(span.holdTimer);
+      }, { passive: false });
+      knownWordsContainer.appendChild(span);
+    });
+  }
 
+  // Перевод заданного процента слов
   function translatePercentage(percentage) {
     document.querySelectorAll(".word.translated").forEach(word => {
       word.textContent = word.dataset.originalText;
