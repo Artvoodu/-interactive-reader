@@ -13,13 +13,16 @@ document.addEventListener("DOMContentLoaded", async () => {
   const translate30Button = document.getElementById("translate30");
   const translate50Button = document.getElementById("translate50");
   const versionIndicator = document.createElement("div");
-  
+
+  // Элементы для загрузки файла
+  const fileUpload = document.getElementById("fileUpload");
+  const loadFileButton = document.getElementById("loadFile");
 
   let knownWords = new Set();
   let selectedWords = new Set();
 
   // Индикатор версии
-  versionIndicator.textContent = "Версия: 22";
+  versionIndicator.textContent = "Версия: 20";
   versionIndicator.style.position = "absolute";
   versionIndicator.style.top = "10px";
   versionIndicator.style.right = "10px";
@@ -33,21 +36,25 @@ document.addEventListener("DOMContentLoaded", async () => {
   textInput.value = "Hoy|сегодня es|есть un día|день hermoso|прекрасный.";
   textInput.style.color = "#888";
   textInput.addEventListener("focus", () => {
-    if (textInput.value === "Hoy|сегодня es|есть un día|день hermoso|прекрасный.") {
+    if (textInput.value === "Hoy|сегодня es|есть un дня|день hermoso|прекрасный." ||
+        textInput.value === "Hoy|сегодня es|есть un día|день hermoso|прекрасный.") {
       textInput.value = "";
       textInput.style.color = "#000";
     }
   });
 
+  // Обработчик кнопки "Показать текст"
   loadTextButton.addEventListener("click", () => {
     const text = textInput.value.trim();
     if (text) renderText(text);
   });
 
+  // Обработчик кнопки "Очистить поле"
   clearInputButton.addEventListener("click", () => {
     textInput.value = "";
   });
 
+  // Обработчик кнопки "Копировать выбранные слова"
   copyWordsButton.addEventListener("click", () => {
     const selectedWordsText = [...selectedWords].join(", ");
     navigator.clipboard.writeText(selectedWordsText).then(() => {
@@ -58,6 +65,23 @@ document.addEventListener("DOMContentLoaded", async () => {
   translate10Button.addEventListener("click", () => translatePercentage(10));
   translate30Button.addEventListener("click", () => translatePercentage(30));
   translate50Button.addEventListener("click", () => translatePercentage(50));
+
+  // Обработчик загрузки файла
+  loadFileButton.addEventListener("click", () => {
+    if (!fileUpload.files.length) {
+      alert("Выберите файл для загрузки.");
+      return;
+    }
+    const file = fileUpload.files[0];
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const fileText = e.target.result;
+      // Записываем содержимое файла в текстовое поле и рендерим его
+      textInput.value = fileText;
+      renderText(fileText);
+    };
+    reader.readAsText(file, "UTF-8");
+  });
 
   // Загрузка выученных слов из Firestore
   async function loadKnownWords() {
@@ -101,56 +125,69 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
-  // Рендер текста: для слов, которые не являются выученными,
-  // добавляем обработчики для mouse и touch событий.
+  /* Новая версия функции renderText:
+     - Текст разбивается на абзацы по символу перевода строки.
+     - Если абзац содержит символ "|", он обрабатывается как интерактивный:
+         каждое слово, содержащее "|" оборачивается в span с нужными данными,
+         остальные слова выводятся как обычный текст.
+     - Если абзац не содержит "|", он выводится как обычный параграф.
+  */
   function renderText(text) {
     textContainer.innerHTML = "";
-    const words = text.split(" ");
-    words.forEach((pair) => {
-      let [original, translation] = pair.split("|");
-      if (!original || !translation) return;
-      let span = document.createElement("span");
-      span.className = "word";
-      const lowerOriginal = original.toLowerCase();
-
-      if (knownWords.has(lowerOriginal)) {
-        span.textContent = original;
-        span.classList.add("known");
-      } else {
-        span.textContent = original;
-        span.dataset.originalText = original;
-        span.dataset.translatedText = translation;
-        // Обработчик клика для ПК (mouse)
-        span.addEventListener("click", toggleTranslation);
-        span.addEventListener("mousedown", (e) => {
-          span.holdTimer = setTimeout(() => {
-            handleLongPress(e, span, "text");
-          }, 500);
-        });
-        span.addEventListener("mouseup", () => clearTimeout(span.holdTimer));
-        span.addEventListener("mouseleave", () => clearTimeout(span.holdTimer));
-        // Обработчики для touch-устройств
-        span.addEventListener("touchstart", (e) => {
-          e.preventDefault();
-          span.touchLongPress = false;
-          span.holdTimer = setTimeout(() => {
-            span.touchLongPress = true;
-            handleLongPress(e, span, "text");
-          }, 500);
-        }, { passive: false });
-        span.addEventListener("touchend", (e) => {
-          clearTimeout(span.holdTimer);
-          if (!span.touchLongPress) {
-            // Если удержание не произошло – короткий тап: переводим слово
-            toggleTranslation({ target: span });
+    const paragraphs = text.split(/\r?\n/);
+    paragraphs.forEach(paragraph => {
+      if (!paragraph.trim()) return; // пропустить пустые строки
+      const p = document.createElement("p");
+      if (paragraph.includes("|")) {
+        const words = paragraph.split(" ");
+        words.forEach(wordPair => {
+          if (wordPair.includes("|")) {
+            let [original, translation] = wordPair.split("|");
+            if (!original || !translation) {
+              p.appendChild(document.createTextNode(wordPair + " "));
+            } else {
+              let span = document.createElement("span");
+              span.className = "word";
+              span.textContent = original;
+              span.dataset.originalText = original;
+              span.dataset.translatedText = translation;
+              // Обработчик клика для ПК
+              span.addEventListener("click", toggleTranslation);
+              // Mouse события
+              span.addEventListener("mousedown", (e) => {
+                span.holdTimer = setTimeout(() => {
+                  handleLongPress(e, span, "text");
+                }, 500);
+              });
+              span.addEventListener("mouseup", () => clearTimeout(span.holdTimer));
+              span.addEventListener("mouseleave", () => clearTimeout(span.holdTimer));
+              // Touch события
+              span.addEventListener("touchstart", (e) => {
+                e.preventDefault();
+                span.touchLongPress = false;
+                span.holdTimer = setTimeout(() => {
+                  span.touchLongPress = true;
+                  handleLongPress(e, span, "text");
+                }, 500);
+              }, { passive: false });
+              span.addEventListener("touchend", (e) => {
+                clearTimeout(span.holdTimer);
+                if (!span.touchLongPress) {
+                  toggleTranslation({ target: span });
+                }
+              }, { passive: false });
+              p.appendChild(span);
+              p.appendChild(document.createTextNode(" "));
+            }
+          } else {
+            p.appendChild(document.createTextNode(wordPair + " "));
           }
-        }, { passive: false });
+        });
+      } else {
+        // Абзац без интерактивных пар – обычный текст
+        p.textContent = paragraph;
       }
-
-      if (selectedWords.has(lowerOriginal)) {
-        span.classList.add("selected");
-      }
-      textContainer.appendChild(span);
+      textContainer.appendChild(p);
     });
   }
 
@@ -166,7 +203,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
-  // При долгом нажатии:
+  // Функция для обработки долгого нажатия:
   // для текста – добавляем слово в выбранные,
   // для выбранного слова – добавляем его в выученные,
   // для выученного – удаляем слово.
@@ -223,7 +260,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       span.addEventListener("touchend", (e) => {
         clearTimeout(span.holdTimer);
         if (!span.touchLongPress) {
-          // Короткий тап – удаляем слово из выбранных
           selectedWords.delete(word);
           updateSelectedWordsUI();
           renderText(textInput.value.trim());
@@ -264,7 +300,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
-  // Перевод заданного процента слов
+  // Функция для перевода заданного процента слов
   function translatePercentage(percentage) {
     document.querySelectorAll(".word.translated").forEach(word => {
       word.textContent = word.dataset.originalText;
