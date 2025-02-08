@@ -22,7 +22,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   let selectedWords = new Set();
 
   // Индикатор версии
-  versionIndicator.textContent = "Версия: 24";
+  versionIndicator.textContent = "Версия: 20";
   versionIndicator.style.position = "absolute";
   versionIndicator.style.top = "10px";
   versionIndicator.style.right = "10px";
@@ -36,7 +36,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   textInput.value = "Hoy|сегодня es|есть un día|день hermoso|прекрасный.";
   textInput.style.color = "#888";
   textInput.addEventListener("focus", () => {
-    if (textInput.value === "Hoy|сегодня es|есть un día|день hermoso|прекрасный.") {
+    if (
+      textInput.value === "Hoy|сегодня es|есть un día|день hermoso|прекрасный."
+    ) {
       textInput.value = "";
       textInput.style.color = "#000";
     }
@@ -65,6 +67,31 @@ document.addEventListener("DOMContentLoaded", async () => {
   translate30Button.addEventListener("click", () => translatePercentage(30));
   translate50Button.addEventListener("click", () => translatePercentage(50));
 
+  // Обработчик кнопки "Выученные слова" (включает/выключает блок)
+  showKnownWordsButton.addEventListener("click", () => {
+    if (
+      knownWordsContainer.style.display === "none" ||
+      knownWordsContainer.style.display === ""
+    ) {
+      knownWordsContainer.style.display = "block";
+      updateKnownWordsUI();
+    } else {
+      knownWordsContainer.style.display = "none";
+    }
+  });
+
+  // Обработчик кнопки "refresh" (сброс выделения и очищение выбранных слов)
+  resetTranslationsButton.addEventListener("click", () => {
+    document.querySelectorAll(".word").forEach((word) => {
+      word.classList.remove("translated", "selected");
+      if (word.dataset && word.dataset.originalText) {
+        word.textContent = word.dataset.originalText;
+      }
+    });
+    selectedWords.clear();
+    updateSelectedWordsUI();
+  });
+
   // Обработчик загрузки файла
   loadFileButton.addEventListener("click", () => {
     if (!fileUpload.files.length) {
@@ -73,7 +100,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
     const file = fileUpload.files[0];
     const reader = new FileReader();
-    reader.onload = function(e) {
+    reader.onload = function (e) {
       const fileText = e.target.result;
       // Записываем содержимое файла в текстовое поле и рендерим его
       textInput.value = fileText;
@@ -92,7 +119,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       updateKnownWordsUI();
       renderText(textInput.value.trim());
     } catch (error) {
-      console.error("Ошибка загрузки выученных слов из Firestore:", error);
+      console.error(
+        "Ошибка загрузки выученных слов из Firestore:",
+        error
+      );
     }
   }
 
@@ -125,21 +155,22 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   /* Функция renderText:
-     - Текст разбивается на абзацы по символу новой строки.
+     - Текст разбивается на абзацы по переводу строки.
      - Если абзац содержит символ "|", он считается интерактивным и разбивается на слова.
        Каждое слово с разделителем "|" превращается в интерактивный элемент span.
-       При этом, если слово уже сохранено (есть в knownWords), ему сразу добавляется класс "known".
-     - Если абзац не содержит "|", он выводится как обычный текстовый абзац.
+       При этом, если слово уже сохранено (есть в knownWords) – ему сразу добавляется класс "known",
+       а если оно также есть в выбранных (selectedWords) – добавляется класс "selected".
+     - Если абзац не содержит "|" – выводится как обычный текстовый абзац.
   */
   function renderText(text) {
     textContainer.innerHTML = "";
     const paragraphs = text.split(/\r?\n/);
-    paragraphs.forEach(paragraph => {
+    paragraphs.forEach((paragraph) => {
       if (!paragraph.trim()) return; // пропускаем пустые строки
       const p = document.createElement("p");
       if (paragraph.includes("|")) {
         const words = paragraph.split(" ");
-        words.forEach(wordPair => {
+        words.forEach((wordPair) => {
           if (wordPair.includes("|")) {
             let [original, translation] = wordPair.split("|");
             if (!original || !translation) {
@@ -181,6 +212,10 @@ document.addEventListener("DOMContentLoaded", async () => {
                     toggleTranslation({ target: span });
                   }
                 }, { passive: false });
+              }
+              // Если слово находится в выбранных, добавляем класс "selected"
+              if (selectedWords.has(lowerOriginal)) {
+                span.classList.add("selected");
               }
               p.appendChild(span);
               p.appendChild(document.createTextNode(" "));
@@ -236,7 +271,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   function updateSelectedWordsUI() {
     const selectedContainer = document.getElementById("selected-words");
     selectedContainer.innerHTML = "";
-    selectedWords.forEach(word => {
+    selectedWords.forEach((word) => {
       let span = document.createElement("span");
       span.className = "word selected";
       span.textContent = word;
@@ -277,7 +312,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Обновление UI для выученных слов
   function updateKnownWordsUI() {
     knownWordsContainer.innerHTML = "<h3>Выученные слова:</h3>";
-    knownWords.forEach(word => {
+    knownWords.forEach((word) => {
       let span = document.createElement("span");
       span.className = "word known";
       span.textContent = word;
@@ -307,7 +342,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Функция для перевода заданного процента слов
   function translatePercentage(percentage) {
-    document.querySelectorAll(".word.translated").forEach(word => {
+    document.querySelectorAll(".word.translated").forEach((word) => {
       word.textContent = word.dataset.originalText;
       word.classList.remove("translated");
     });
