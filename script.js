@@ -22,7 +22,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   let selectedWords = new Set();
 
   // Индикатор версии
-  versionIndicator.textContent = "Версия: 20";
+  versionIndicator.textContent = "Версия: 24";
   versionIndicator.style.position = "absolute";
   versionIndicator.style.top = "10px";
   versionIndicator.style.right = "10px";
@@ -36,8 +36,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   textInput.value = "Hoy|сегодня es|есть un día|день hermoso|прекрасный.";
   textInput.style.color = "#888";
   textInput.addEventListener("focus", () => {
-    if (textInput.value === "Hoy|сегодня es|есть un дня|день hermoso|прекрасный." ||
-        textInput.value === "Hoy|сегодня es|есть un día|день hermoso|прекрасный.") {
+    if (textInput.value === "Hoy|сегодня es|есть un día|день hermoso|прекрасный.") {
       textInput.value = "";
       textInput.style.color = "#000";
     }
@@ -125,18 +124,18 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
-  /* Новая версия функции renderText:
-     - Текст разбивается на абзацы по символу перевода строки.
-     - Если абзац содержит символ "|", он обрабатывается как интерактивный:
-         каждое слово, содержащее "|" оборачивается в span с нужными данными,
-         остальные слова выводятся как обычный текст.
-     - Если абзац не содержит "|", он выводится как обычный параграф.
+  /* Функция renderText:
+     - Текст разбивается на абзацы по символу новой строки.
+     - Если абзац содержит символ "|", он считается интерактивным и разбивается на слова.
+       Каждое слово с разделителем "|" превращается в интерактивный элемент span.
+       При этом, если слово уже сохранено (есть в knownWords), ему сразу добавляется класс "known".
+     - Если абзац не содержит "|", он выводится как обычный текстовый абзац.
   */
   function renderText(text) {
     textContainer.innerHTML = "";
     const paragraphs = text.split(/\r?\n/);
     paragraphs.forEach(paragraph => {
-      if (!paragraph.trim()) return; // пропустить пустые строки
+      if (!paragraph.trim()) return; // пропускаем пустые строки
       const p = document.createElement("p");
       if (paragraph.includes("|")) {
         const words = paragraph.split(" ");
@@ -148,34 +147,41 @@ document.addEventListener("DOMContentLoaded", async () => {
             } else {
               let span = document.createElement("span");
               span.className = "word";
-              span.textContent = original;
-              span.dataset.originalText = original;
-              span.dataset.translatedText = translation;
-              // Обработчик клика для ПК
-              span.addEventListener("click", toggleTranslation);
-              // Mouse события
-              span.addEventListener("mousedown", (e) => {
-                span.holdTimer = setTimeout(() => {
-                  handleLongPress(e, span, "text");
-                }, 500);
-              });
-              span.addEventListener("mouseup", () => clearTimeout(span.holdTimer));
-              span.addEventListener("mouseleave", () => clearTimeout(span.holdTimer));
-              // Touch события
-              span.addEventListener("touchstart", (e) => {
-                e.preventDefault();
-                span.touchLongPress = false;
-                span.holdTimer = setTimeout(() => {
-                  span.touchLongPress = true;
-                  handleLongPress(e, span, "text");
-                }, 500);
-              }, { passive: false });
-              span.addEventListener("touchend", (e) => {
-                clearTimeout(span.holdTimer);
-                if (!span.touchLongPress) {
-                  toggleTranslation({ target: span });
-                }
-              }, { passive: false });
+              const lowerOriginal = original.toLowerCase();
+              if (knownWords.has(lowerOriginal)) {
+                // Слово уже сохранено – отмечаем его как "known"
+                span.textContent = original;
+                span.classList.add("known");
+              } else {
+                span.textContent = original;
+                span.dataset.originalText = original;
+                span.dataset.translatedText = translation;
+                // Обработчик клика для ПК
+                span.addEventListener("click", toggleTranslation);
+                // Mouse-события
+                span.addEventListener("mousedown", (e) => {
+                  span.holdTimer = setTimeout(() => {
+                    handleLongPress(e, span, "text");
+                  }, 500);
+                });
+                span.addEventListener("mouseup", () => clearTimeout(span.holdTimer));
+                span.addEventListener("mouseleave", () => clearTimeout(span.holdTimer));
+                // Touch-события
+                span.addEventListener("touchstart", (e) => {
+                  e.preventDefault();
+                  span.touchLongPress = false;
+                  span.holdTimer = setTimeout(() => {
+                    span.touchLongPress = true;
+                    handleLongPress(e, span, "text");
+                  }, 500);
+                }, { passive: false });
+                span.addEventListener("touchend", (e) => {
+                  clearTimeout(span.holdTimer);
+                  if (!span.touchLongPress) {
+                    toggleTranslation({ target: span });
+                  }
+                }, { passive: false });
+              }
               p.appendChild(span);
               p.appendChild(document.createTextNode(" "));
             }
@@ -184,7 +190,6 @@ document.addEventListener("DOMContentLoaded", async () => {
           }
         });
       } else {
-        // Абзац без интерактивных пар – обычный текст
         p.textContent = paragraph;
       }
       textContainer.appendChild(p);
